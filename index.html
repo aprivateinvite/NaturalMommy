@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en" id="html-root">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Meet People Near You Tonight</title>
+
+<meta name="description" content="Discover people near your location and start chatting today.">
+
+<style>
+
+/* [v-cloak] previne que os {{ }} do Vue apareçam antes da página carregar */
+[v-cloak] { display: none; }
+
+body{
+font-family:Arial;
+margin:0;
+background:#0f172a;
+color:white;
+text-align:center;
+}
+
+.hero{
+padding:100px 20px;
+}
+
+.cta{
+background:#00BFFF;
+padding:15px 30px;
+border-radius:8px;
+display:inline-block;
+color:white;
+text-decoration:none;
+font-weight:bold;
+margin-top:20px;
+}
+
+.online{
+margin-top:20px;
+font-size:18px;
+color:#38bdf8;
+}
+
+</style>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js" defer></script>
+
+</head>
+
+<body>
+
+<div id="app" v-cloak>
+
+    <section class="hero">
+
+        <h1>{{ t.headline.replace('{greet}', greet).replace('{city}', city) }}</h1>
+
+        <p>{{ t.subtext.replace('{city}', city) }}</p>
+
+        <div class="online">
+            <span>{{ onlineCount }}</span> {{ t.onlineText }}
+        </div>
+
+        <a href="https://bggcgce.datesoffers.com/s/59cd6ef16fd92" class="cta">{{ t.cta }}</a>
+
+    </section>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const { createApp, ref, computed, onMounted } = Vue;
+
+    // Dicionário de Traduções
+    const translations = {
+        en: {
+            fallbackCity: "your area",
+            greetings: { morning: "Good morning", afternoon: "Good afternoon", evening: "Good evening" },
+            headline: "{greet}! People in {city} are looking to meet tonight",
+            subtext: "New profiles from {city} joined in the last few minutes",
+            onlineText: "people online right now",
+            cta: "See Matches"
+        },
+        pt: {
+            fallbackCity: "sua região",
+            greetings: { morning: "Bom dia", afternoon: "Boa tarde", evening: "Boa noite" },
+            headline: "{greet}! Pessoas em {city} estão querendo um encontro hoje à noite",
+            subtext: "Novos perfis de {city} entraram nos últimos minutos",
+            onlineText: "pessoas online agora",
+            cta: "Ver Perfis"
+        }
+    };
+
+    const app = createApp({
+        setup() {
+            // Estado Reativo
+            const lang = ref("en");
+            const city = ref("your area");
+            const timeOfDay = ref("evening");
+            const onlineCount = ref(0);
+
+            // Computed Properties para atualizar o texto automaticamente caso o idioma mude
+            const t = computed(() => translations[lang.value] || translations['en']);
+            
+            const greet = computed(() => {
+                return t.value.greetings[timeOfDay.value];
+            });
+
+            // Funções de Inicialização
+            const initLang = () => {
+                const navLang = navigator.language.slice(0, 2);
+                if (translations[navLang]) {
+                    lang.value = navLang;
+                    document.documentElement.lang = navLang;
+                    // Se a cidade ainda for o padrão em inglês, ajusta para o idioma local
+                    if(city.value === "your area") {
+                        city.value = translations[navLang].fallbackCity;
+                    }
+                }
+            };
+
+            const initGeo = async () => {
+                try {
+                    const res = await fetch('https://get.geojs.io/v1/ip/geo.json');
+                    const data = await res.json();
+                    
+                    if (data.city) {
+                        city.value = data.city;
+                    } else if (data.region) {
+                        city.value = data.region;
+                    }
+                } catch (e) {
+                    console.log("Geo fallback failed.");
+                }
+            };
+
+            const initTime = () => {
+                const hour = new Date().getHours();
+                if (hour < 12) timeOfDay.value = "morning";
+                else if (hour < 18) timeOfDay.value = "afternoon";
+                else timeOfDay.value = "evening";
+            };
+
+            const initOnlineCount = () => {
+                const min = 120;
+                const max = 350;
+                onlineCount.value = Math.floor(Math.random() * (max - min) + min);
+            };
+
+            // Dispara as funções quando a página carrega
+            onMounted(() => {
+                initLang();
+                initGeo();
+                initTime();
+                initOnlineCount();
+            });
+
+            return { city, t, greet, onlineCount };
+        }
+    });
+
+    app.mount('#app');
+});
+</script>
+
+</body>
+</html>
